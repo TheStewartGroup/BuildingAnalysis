@@ -33,11 +33,11 @@ const Header = () => {
               Contact
             </Link>
             <a
-              href="tel:+12125551234"
+              href="tel:+13475632284"
               className="flex items-center gap-2 bg-accent-500 text-primary-900 px-6 py-2.5 rounded-lg hover:bg-accent-400 transition-colors font-semibold"
             >
               <FaPhone className="text-sm" />
-              <span>(212) 555-1234</span>
+              <span>(347) 563-2284</span>
             </a>
           </nav>
 
@@ -70,11 +70,11 @@ const Header = () => {
                 Contact
               </Link>
               <a
-                href="tel:+12125551234"
+                href="tel:+13475632284"
                 className="flex items-center gap-2 bg-accent-500 text-primary-900 px-6 py-2.5 rounded-lg hover:bg-accent-400 transition-colors w-fit font-semibold"
               >
                 <FaPhone className="text-sm" />
-                <span>(212) 555-1234</span>
+                <span>(347) 563-2284</span>
               </a>
             </div>
           </nav>

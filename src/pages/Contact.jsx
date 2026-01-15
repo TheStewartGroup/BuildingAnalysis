@@ -93,7 +93,7 @@ const Contact = () => {
               {/* Contact Details */}
               <div className="space-y-4">
                 <a
-                  href="tel:+12125551234"
+                  href="tel:+13475632284"
                   className="flex items-center gap-4 bg-white p-5 rounded-xl border border-gray-100 hover:border-primary-200 hover:shadow-sm transition-all"
                 >
                   <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -101,7 +101,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <div className="text-sm text-gray-500">Phone</div>
-                    <div className="font-semibold text-gray-900">(212) 555-1234</div>
+                    <div className="font-semibold text-gray-900">(347) 563-2284</div>
                   </div>
                 </a>
 
@@ -242,7 +242,7 @@ const Contact = () => {
                             value={formData.phone}
                             onChange={handleChange}
                             className="input-field"
-                            placeholder="(212) 555-1234"
+                            placeholder="(347) 563-2284"
                           />
                         </div>
                       </div>

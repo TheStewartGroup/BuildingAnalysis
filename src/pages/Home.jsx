@@ -510,7 +510,7 @@ const Home = () => {
             </div>
             <div className="flex flex-wrap gap-4">
               <a
-                href="tel:+12125551234"
+                href="tel:+13475632284"
                 className="px-8 py-3 bg-accent-500 text-primary-900 rounded-lg hover:bg-accent-400 transition-colors font-semibold flex items-center gap-2"
               >
                 <FaPhone />
