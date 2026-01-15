@@ -97,7 +97,7 @@ const Home = () => {
       {/* Hero Section */}
       <section className="relative bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 min-h-[85vh]">
+          <div className="grid lg:grid-cols-2 min-h-[60vh] lg:min-h-[85vh]">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -138,7 +138,7 @@ const Home = () => {
               </div>
 
               {/* Stats Row */}
-              <div className="flex flex-wrap gap-8 pt-8 border-t border-gray-100">
+              <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 border-t border-gray-100">
                 {stats.slice(0, 3).map((stat, index) => (
                   <motion.div
                     key={index}
@@ -146,8 +146,8 @@ const Home = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
                   >
-                    <div className="text-3xl font-bold text-primary-600 mb-1">{stat.number}</div>
-                    <div className="text-gray-500 text-sm">{stat.label}</div>
+                    <div className="text-xl sm:text-3xl font-bold text-primary-600 mb-1">{stat.number}</div>
+                    <div className="text-gray-500 text-xs sm:text-sm">{stat.label}</div>
                   </motion.div>
                 ))}
               </div>
@@ -214,13 +214,13 @@ const Home = () => {
       </section>
 
       {/* Calculator Section */}
-      <section id="calculator" className="py-24 bg-gray-50">
+      <section id="calculator" className="py-12 sm:py-24 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-16"
           >
             <div className="inline-flex items-center gap-2 text-primary-600 mb-4">
               <span className="w-8 h-[2px] bg-accent-500" />
@@ -244,7 +244,7 @@ const Home = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <div className="bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-gray-100">
+              <div className="bg-white p-5 sm:p-8 md:p-10 rounded-2xl shadow-sm border border-gray-100">
                 <div className="space-y-6">
                   {/* Building Type */}
                   <div>
@@ -404,11 +404,11 @@ const Home = () => {
               {results ? (
                 <>
                   {/* NOI Card */}
-                  <div className="bg-primary-900 p-8 rounded-2xl text-white">
+                  <div className="bg-primary-900 p-5 sm:p-8 rounded-2xl text-white">
                     <div className="text-primary-300 text-sm font-semibold uppercase tracking-wide mb-2">
                       Net Operating Income (NOI)
                     </div>
-                    <div className="text-4xl md:text-5xl font-bold text-accent-400 mb-4">
+                    <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-accent-400 mb-4">
                       {formatCurrency(results.noi)}
                     </div>
                     <div className="space-y-2 text-sm text-primary-200">
@@ -430,12 +430,15 @@ const Home = () => {
                   </div>
 
                   {/* Value Estimate Card */}
-                  <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                  <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
                     <div className="text-gray-500 text-sm font-semibold uppercase tracking-wide mb-2">
                       Estimated Property Value
                     </div>
-                    <div className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                      {formatCurrency(results.valueLow)} - {formatCurrency(results.valueHigh)}
+                    <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                      <span className="block sm:inline">{formatCurrency(results.valueLow)}</span>
+                      <span className="hidden sm:inline"> - </span>
+                      <span className="block sm:hidden text-lg text-gray-500 font-normal">to</span>
+                      <span className="block sm:inline">{formatCurrency(results.valueHigh)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-primary-600 mb-6">
                       <FaPercent />
@@ -474,7 +477,7 @@ const Home = () => {
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Enter Your Property Details</h3>
                   <p className="text-gray-500 max-w-sm">
-                    Fill in the income and expense information on the left to see your estimated property value.
+                    Fill in the income and expense information above to see your estimated property value.
                   </p>
 
                   {/* Info boxes */}
