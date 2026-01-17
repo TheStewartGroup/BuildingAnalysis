@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://alessisheinman.github.io/Thomas-s-Calculator/",
+  "homepage": "https://TheStewartGroup.github.io/BuildingAnalysis/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
