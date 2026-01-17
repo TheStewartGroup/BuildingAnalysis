@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FaCalculator, FaDollarSign, FaHome, FaStore, FaPercent } from 'react-icons/fa';
+import { FaDollarSign, FaHome, FaStore, FaPercent } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import PizZip from 'pizzip';
 import logoImage from '../images/Logo.jpg';
 import headshotsImage from '../images/headshots.png';
 import contactInfoImage from '../images/Contact Information.png';
@@ -46,7 +47,7 @@ function App() {
     return { low: 0.065, high: 0.08, label: 'Mostly Stabilized (<20%)' };
   };
 
-  const calculateValue = () => {
+  const calculateValue = async () => {
     // Validate required fields
     if (!submarket) {
       alert('Please select a Submarket');
@@ -62,6 +63,14 @@ function App() {
     }
     if (buildingType === 'mixed-use' && !retailIncome.trim()) {
       alert('Please enter Annual Retail Income');
+      return;
+    }
+    if (!contactName.trim()) {
+      alert('Please enter your Name');
+      return;
+    }
+    if (!buildingAddress.trim()) {
+      alert('Please enter the Building Address');
       return;
     }
 
@@ -86,6 +95,9 @@ function App() {
       retail,
       expenses,
     });
+
+    // Generate and download PowerPoint
+    await generatePowerPoint(valueLow, valueHigh);
   };
 
   const clearForm = () => {
@@ -113,6 +125,67 @@ function App() {
 
   const formatPercent = (value) => {
     return (value * 100).toFixed(1) + '%';
+  };
+
+  const formatName = (name) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const generatePowerPoint = async (valueLow, valueHigh) => {
+    try {
+      // Fetch the template
+      const response = await fetch(`${import.meta.env.BASE_URL}template.pptx`);
+      const arrayBuffer = await response.arrayBuffer();
+
+      // Load the template with PizZip
+      const zip = new PizZip(arrayBuffer);
+
+      // Format the data
+      const addressUpper = buildingAddress.toUpperCase();
+      const formattedName = formatName(contactName);
+      const valueRange = `${formatCurrency(valueHigh)} - ${formatCurrency(valueLow)}`;
+
+      // Get all XML files from the pptx
+      const slideFiles = Object.keys(zip.files).filter(name =>
+        name.startsWith('ppt/slides/slide') && name.endsWith('.xml')
+      );
+
+      // Process each slide
+      slideFiles.forEach(fileName => {
+        let content = zip.file(fileName).asText();
+
+        // Replace placeholders
+        content = content.replace(/INPUT ADDRESS/g, addressUpper);
+        content = content.replace(/INPUT NAME/g, formattedName);
+        content = content.replace(/INPUT RANGE \(HIGH TO LOW\)/g, valueRange);
+
+        // Update the file in the zip
+        zip.file(fileName, content);
+      });
+
+      // Generate the new PowerPoint file
+      const output = zip.generate({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      });
+
+      // Create download link
+      const url = URL.createObjectURL(output);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${addressUpper} ANALYSIS.pptx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Error generating PowerPoint:', error);
+      alert('Error generating PowerPoint. Please try again.');
+    }
   };
 
   return (
