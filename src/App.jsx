@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import logoImage from '../images/Logo.jpg';
 import headshotsImage from '../images/headshots.png';
 import contactInfoImage from '../images/Contact Information.png';
-import sideTextImage from '../images/side text.png';
+import sideTextImage from '../images/side text.jpg';
+import titleImage from '../images/title.jpg';
 
 function App() {
   const [buildingType, setBuildingType] = useState('multifamily');
@@ -108,14 +109,13 @@ function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-center mb-8"
+            className="flex justify-center mb-8"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-              Property Value Calculator
-            </h2>
-            <p className="text-gray-300">
-              Estimate your property value based on NOI and current cap rates
-            </p>
+            <img
+              src={titleImage}
+              alt="Property Value Calculator"
+              className="max-w-2xl w-full h-auto"
+            />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
