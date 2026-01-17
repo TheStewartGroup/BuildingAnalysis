@@ -9,12 +9,30 @@ import titleImage from '../images/title.jpg';
 
 function App() {
   const [buildingType, setBuildingType] = useState('multifamily');
+  const [submarket, setSubmarket] = useState('');
   const [residentialIncome, setResidentialIncome] = useState('');
   const [retailIncome, setRetailIncome] = useState('');
   const [operatingExpenses, setOperatingExpenses] = useState('');
   const [unitCount, setUnitCount] = useState('');
   const [freeMarketPercent, setFreeMarketPercent] = useState(50);
   const [results, setResults] = useState(null);
+
+  const submarkets = [
+    'Lower East Side',
+    'East Village',
+    'Chelsea',
+    'Upper East Side',
+    'Upper West Side',
+    'Chinatown',
+    'Midtown East',
+    'Midtown West',
+    'West Village',
+    'SoHo',
+    'TriBeCa',
+    'Gramercy',
+    'Greenwich Village',
+    'NoHo'
+  ];
 
   const getCapRateBand = (freeMarket) => {
     if (freeMarket >= 80) return { low: 0.045, high: 0.055, label: 'Mostly Free Market (80%+)' };
@@ -26,6 +44,10 @@ function App() {
 
   const calculateValue = () => {
     // Validate required fields
+    if (!submarket) {
+      alert('Please select a Submarket');
+      return;
+    }
     if (!residentialIncome.trim()) {
       alert('Please enter Annual Residential Income');
       return;
@@ -63,6 +85,7 @@ function App() {
   };
 
   const clearForm = () => {
+    setSubmarket('');
     setResidentialIncome('');
     setRetailIncome('');
     setOperatingExpenses('');
@@ -172,6 +195,24 @@ function App() {
                         Mixed-Use
                       </button>
                     </div>
+                  </div>
+
+                  {/* Submarket */}
+                  <div>
+                    <label htmlFor="submarket" className="block text-sm font-medium text-gray-700 mb-2">
+                      Submarket
+                    </label>
+                    <select
+                      id="submarket"
+                      value={submarket}
+                      onChange={(e) => setSubmarket(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select a submarket</option>
+                      {submarkets.map((sm) => (
+                        <option key={sm} value={sm}>{sm}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Annual Residential Income */}
