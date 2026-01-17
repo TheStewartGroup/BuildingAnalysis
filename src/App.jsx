@@ -114,7 +114,7 @@ function App() {
             <img
               src={titleImage}
               alt="Property Value Calculator"
-              className="max-w-2xl w-full h-auto"
+              className="max-w-md w-full h-auto"
             />
           </motion.div>
 
