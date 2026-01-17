@@ -16,6 +16,10 @@ function App() {
   const [unitCount, setUnitCount] = useState('');
   const [freeMarketPercent, setFreeMarketPercent] = useState(50);
   const [results, setResults] = useState(null);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [buildingAddress, setBuildingAddress] = useState('');
 
   const submarkets = [
     'Lower East Side',
@@ -92,6 +96,10 @@ function App() {
     setUnitCount('');
     setFreeMarketPercent(50);
     setResults(null);
+    setContactName('');
+    setContactPhone('');
+    setContactEmail('');
+    setBuildingAddress('');
   };
 
   const formatCurrency = (value) => {
@@ -305,6 +313,64 @@ function App() {
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>0% (All Stabilized)</span>
                       <span>100% (All Free Market)</span>
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="border-t border-gray-200 pt-5 mt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="contactName" className="block text-sm font-medium text-gray-700 mb-2">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          id="contactName"
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Your name"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          id="contactPhone"
+                          value={contactPhone}
+                          onChange={(e) => setContactPhone(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="(555) 555-5555"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          id="contactEmail"
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="you@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="buildingAddress" className="block text-sm font-medium text-gray-700 mb-2">
+                          Building Address
+                        </label>
+                        <input
+                          type="text"
+                          id="buildingAddress"
+                          value={buildingAddress}
+                          onChange={(e) => setBuildingAddress(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="123 Main St, New York, NY"
+                        />
+                      </div>
                     </div>
                   </div>
 
