@@ -10,10 +10,10 @@ import sideTextImage from '../images/side text.jpg';
 import titleImage from '../images/title.jpg';
 import completionTextImage from '../images/Completion Text.jpg';
 
-// Initialize EmailJS - Replace with your credentials from emailjs.com
-const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+// EmailJS credentials
+const EMAILJS_SERVICE_ID = "service_l9sra7p";
+const EMAILJS_TEMPLATE_ID = "template_9uted9z";
+const EMAILJS_PUBLIC_KEY = "grMr8mUr0YLCUu5QO";
 
 function App() {
   const [buildingType, setBuildingType] = useState('multifamily');
@@ -286,25 +286,43 @@ function App() {
         zip.file(fileName, content);
       });
 
-      // Generate the PowerPoint as base64
-      const base64Output = zip.generate({
-        type: 'base64',
+      // Generate the PowerPoint as blob
+      const pptxBlob = zip.generate({
+        type: 'blob',
         mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
       });
 
-      // Prepare email data
+      // Upload to File.io to get a download link
+      const formData = new FormData();
+      formData.append('file', pptxBlob, `${addressUpper} ANALYSIS.pptx`);
+
+      const uploadResponse = await fetch('https://file.io', {
+        method: 'POST',
+        body: formData
+      });
+
+      const uploadResult = await uploadResponse.json();
+
+      if (!uploadResult.success) {
+        throw new Error('Failed to upload file');
+      }
+
+      const downloadLink = uploadResult.link;
+
+      // Prepare email data with all form inputs
       const templateParams = {
-        to_email: 'tom.windels@marcusmillichap.com',
         from_name: formattedName,
-        from_email: contactEmail,
-        phone: contactPhone,
+        from_email: contactEmail || 'Not provided',
+        phone: contactPhone || 'Not provided',
         property_address: addressUpper,
         submarket: submarket,
         building_type: buildingType === 'mixed-use' ? 'Mixed-Use' : 'Multifamily',
-        value_range: valueRange,
-        cap_rate_range: `${formatPercent(capBand.low)} - ${formatPercent(capBand.high)}`,
-        file_name: `${addressUpper} ANALYSIS.pptx`,
-        file_content: base64Output
+        residential_income: residentialIncome ? `$${residentialIncome}` : 'Not provided',
+        retail_income: buildingType === 'mixed-use' ? (retailIncome ? `$${retailIncome}` : 'Not provided') : 'N/A',
+        operating_expenses: operatingExpenses ? `$${operatingExpenses}` : 'Not provided',
+        unit_count: unitCount || 'Not provided',
+        free_market_percent: `${freeMarketPercent}%`,
+        download_link: downloadLink
       };
 
       // Send email via EmailJS
@@ -314,8 +332,6 @@ function App() {
         templateParams,
         EMAILJS_PUBLIC_KEY
       );
-
-      alert('Your analysis has been submitted successfully! Tom will receive it shortly.');
 
     } catch (error) {
       console.error('Error sending email:', error);
