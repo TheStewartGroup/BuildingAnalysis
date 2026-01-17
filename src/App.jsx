@@ -413,27 +413,44 @@ function App() {
       {/* Calculator Section */}
       <section className="py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex justify-center mb-8"
-          >
-            <img
-              src={titleImage}
-              alt="Property Value Calculator"
-              className="max-w-md w-full h-auto"
-            />
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Calculator Form */}
+          {results ? (
+            /* Show Completion Text Full Width */
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="flex justify-center"
             >
-              <div className="bg-white p-6 sm:p-8 rounded-xl">
+              <img
+                src={completionTextImage}
+                alt="Submission Complete"
+                className="max-w-2xl w-full h-auto rounded-lg"
+              />
+            </motion.div>
+          ) : (
+            /* Show Calculator */
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="flex justify-center mb-8"
+              >
+                <img
+                  src={titleImage}
+                  alt="Property Value Calculator"
+                  className="max-w-md w-full h-auto"
+                />
+              </motion.div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Calculator Form */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
+                  <div className="bg-white p-6 sm:p-8 rounded-xl">
                 <div className="space-y-5">
                   {/* Building Type */}
                   <div>
@@ -661,28 +678,22 @@ function App() {
               </div>
             </motion.div>
 
-            {/* Results Panel */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="h-full flex items-center justify-center"
-            >
-              {results ? (
-                <img
-                  src={completionTextImage}
-                  alt="Submission Complete"
-                  className="w-full h-auto rounded-lg"
-                />
-              ) : (
-                <img
-                  src={sideTextImage}
-                  alt="Market Analysis Info"
-                  className="w-full h-auto rounded-lg"
-                />
-              )}
-            </motion.div>
-          </div>
+                {/* Side Text Panel */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="h-full flex items-center justify-center"
+                >
+                  <img
+                    src={sideTextImage}
+                    alt="Market Analysis Info"
+                    className="w-full h-auto rounded-lg"
+                  />
+                </motion.div>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
