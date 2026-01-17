@@ -12,6 +12,7 @@
     "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "framer-motion": "^12.25.0",
     "pizzip": "^3.2.0",
     "pptxgenjs": "^4.0.1",

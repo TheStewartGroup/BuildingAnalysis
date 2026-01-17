@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { FaDollarSign, FaHome, FaStore, FaPercent } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import PizZip from 'pizzip';
+import emailjs from '@emailjs/browser';
 import logoImage from '../images/Logo.jpg';
 import headshotsImage from '../images/headshots.png';
 import contactInfoImage from '../images/Contact Information.png';
 import sideTextImage from '../images/side text.jpg';
 import titleImage from '../images/title.jpg';
+
+// Initialize EmailJS - Replace with your credentials from emailjs.com
+const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
 
 function App() {
   const [buildingType, setBuildingType] = useState('multifamily');
@@ -209,8 +215,8 @@ function App() {
       expenses,
     });
 
-    // Generate and download PowerPoint
-    await generatePowerPoint(valueLow, valueHigh);
+    // Generate and email PowerPoint
+    await generateAndEmailPowerPoint(valueLow, valueHigh, capBand);
   };
 
   const clearForm = () => {
@@ -247,7 +253,7 @@ function App() {
       .join(' ');
   };
 
-  const generatePowerPoint = async (valueLow, valueHigh) => {
+  const generateAndEmailPowerPoint = async (valueLow, valueHigh, capBand) => {
     try {
       // Fetch the template
       const response = await fetch(`${import.meta.env.BASE_URL}template.pptx`);
@@ -279,25 +285,40 @@ function App() {
         zip.file(fileName, content);
       });
 
-      // Generate the new PowerPoint file
-      const output = zip.generate({
-        type: 'blob',
+      // Generate the PowerPoint as base64
+      const base64Output = zip.generate({
+        type: 'base64',
         mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
       });
 
-      // Create download link
-      const url = URL.createObjectURL(output);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${addressUpper} ANALYSIS.pptx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Prepare email data
+      const templateParams = {
+        to_email: 'tom.windels@marcusmillichap.com',
+        from_name: formattedName,
+        from_email: contactEmail,
+        phone: contactPhone,
+        property_address: addressUpper,
+        submarket: submarket,
+        building_type: buildingType === 'mixed-use' ? 'Mixed-Use' : 'Multifamily',
+        value_range: valueRange,
+        cap_rate_range: `${formatPercent(capBand.low)} - ${formatPercent(capBand.high)}`,
+        file_name: `${addressUpper} ANALYSIS.pptx`,
+        file_content: base64Output
+      };
+
+      // Send email via EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      alert('Your analysis has been submitted successfully! Tom will receive it shortly.');
 
     } catch (error) {
-      console.error('Error generating PowerPoint:', error);
-      alert('Error generating PowerPoint. Please try again.');
+      console.error('Error sending email:', error);
+      alert('Error submitting analysis. Please try again or contact support.');
     }
   };
 
