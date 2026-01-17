@@ -378,10 +378,9 @@ function App() {
                   <div className="flex gap-4 pt-2">
                     <button
                       onClick={calculateValue}
-                      className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all font-semibold flex items-center justify-center gap-2"
+                      className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all font-semibold flex items-center justify-center"
                     >
-                      <FaCalculator />
-                      Calculate
+                      Submit
                     </button>
                     <button
                       onClick={clearForm}
