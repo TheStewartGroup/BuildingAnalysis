@@ -11,7 +11,7 @@ import titleImage from '../images/title.jpg';
 import completionTextImage from '../images/Completion Text.jpg';
 
 // EmailJS credentials
-const EMAILJS_SERVICE_ID = "service_l9sra7p";
+const EMAILJS_SERVICE_ID = "service_vi2s038";
 const EMAILJS_TEMPLATE_ID = "template_9uted9z";
 const EMAILJS_PUBLIC_KEY = "grMr8mUr0YLCUu5QO";
 
