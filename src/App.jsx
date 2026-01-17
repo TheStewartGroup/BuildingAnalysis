@@ -24,6 +24,7 @@ function App() {
   const [unitCount, setUnitCount] = useState('');
   const [freeMarketPercent, setFreeMarketPercent] = useState(50);
   const [results, setResults] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -168,6 +169,9 @@ function App() {
   };
 
   const calculateValue = async () => {
+    // Prevent double submission
+    if (isSubmitting) return;
+
     // Validate required fields
     if (!submarket) {
       alert('Please select a Submarket');
@@ -193,6 +197,9 @@ function App() {
       alert('Please enter the Building Address');
       return;
     }
+
+    // Set submitting state to prevent double clicks
+    setIsSubmitting(true);
 
     const residential = parseFloat(residentialIncome.replace(/,/g, '')) || 0;
     const retail = buildingType === 'mixed-use' ? (parseFloat(retailIncome.replace(/,/g, '')) || 0) : 0;
@@ -348,6 +355,9 @@ function App() {
       );
       console.log('Email sent successfully:', emailResult);
 
+      // Show success alert
+      alert('File submitted successfully!');
+
       // Clear the form after successful submission
       setSubmarket('');
       setResidentialIncome('');
@@ -359,10 +369,12 @@ function App() {
       setContactPhone('');
       setContactEmail('');
       setBuildingAddress('');
+      setIsSubmitting(false);
 
     } catch (error) {
       console.error('Error details:', error);
       alert(`Error submitting analysis: ${error.text || error.message || 'Unknown error'}. Please try again or contact support.`);
+      setIsSubmitting(false);
     }
   };
 
@@ -629,9 +641,14 @@ function App() {
                   <div className="flex gap-4 pt-2">
                     <button
                       onClick={calculateValue}
-                      className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all font-semibold flex items-center justify-center"
+                      disabled={isSubmitting}
+                      className={`flex-1 px-6 py-3 rounded-lg transition-all font-semibold flex items-center justify-center ${
+                        isSubmitting
+                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
                     >
-                      Submit
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
                     </button>
                     <button
                       onClick={clearForm}
