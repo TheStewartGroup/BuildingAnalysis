@@ -419,23 +419,35 @@ function App() {
         mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
       });
 
-      // Upload to file.io to get a download link
+      // Upload to gofile.io to get a download link (supports CORS)
+      // Step 1: Get an available server
+      const serverResponse = await fetch('https://api.gofile.io/servers');
+      const serverResult = await serverResponse.json();
+      console.log('gofile.io server result:', serverResult);
+
+      if (serverResult.status !== 'ok' || !serverResult.data?.servers?.length) {
+        throw new Error('Failed to get upload server');
+      }
+
+      const server = serverResult.data.servers[0].name;
+
+      // Step 2: Upload to the server
       const formData = new FormData();
       formData.append('file', pptxBlob, `${addressUpper.replace(/[^a-zA-Z0-9]/g, '_')}_ANALYSIS.pptx`);
 
-      const uploadResponse = await fetch('https://file.io', {
+      const uploadResponse = await fetch(`https://${server}.gofile.io/contents/uploadfile`, {
         method: 'POST',
         body: formData
       });
 
       const uploadResult = await uploadResponse.json();
-      console.log('file.io upload result:', uploadResult);
+      console.log('gofile.io upload result:', uploadResult);
 
-      if (!uploadResult.success) {
-        throw new Error('Failed to upload file: ' + (uploadResult.message || 'Unknown error'));
+      if (uploadResult.status !== 'ok') {
+        throw new Error('Failed to upload file: ' + (uploadResult.status || 'Unknown error'));
       }
 
-      const downloadLink = uploadResult.link;
+      const downloadLink = uploadResult.data.downloadPage;
 
       // Prepare email data with all form inputs
       const getBuildingTypeLabel = () => {
