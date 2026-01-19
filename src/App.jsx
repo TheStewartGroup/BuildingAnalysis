@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaDollarSign, FaHome, FaStore, FaPercent } from 'react-icons/fa';
+import { FaDollarSign, FaHome, FaStore, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import PizZip from 'pizzip';
 import emailjs from '@emailjs/browser';
@@ -29,6 +29,12 @@ function App() {
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [buildingAddress, setBuildingAddress] = useState('');
+
+  // Commercial-specific state
+  const [commercialIncome, setCommercialIncome] = useState('');
+  const [commercialUnitCount, setCommercialUnitCount] = useState('');
+  const [hasResidentialComponent, setHasResidentialComponent] = useState(false);
+  const [residentialUnitCount, setResidentialUnitCount] = useState('');
 
   // Cap rate data from CSV - organized by submarket and free market percentage
   const capRateData = {
@@ -132,6 +138,24 @@ function App() {
     }
   };
 
+  // Commercial cap rate data - flat rates per submarket (no free market percentage)
+  const commercialCapRateData = {
+    'Lower East Side': { low: 0.055, high: 0.065 },
+    'East Village': { low: 0.055, high: 0.065 },
+    'Chelsea': { low: 0.055, high: 0.065 },
+    'Upper East Side': { low: 0.055, high: 0.065 },
+    'Upper West Side': { low: 0.055, high: 0.065 },
+    'Chinatown': { low: 0.06, high: 0.07 },
+    'Midtown East': { low: 0.0575, high: 0.0675 },
+    'Midtown West': { low: 0.0575, high: 0.0675 },
+    'West Village': { low: 0.0525, high: 0.0625 },
+    'SoHo': { low: 0.05, high: 0.06 },
+    'TriBeCa': { low: 0.0525, high: 0.0625 },
+    'Gramercy': { low: 0.055, high: 0.065 },
+    'Greenwich Village': { low: 0.0525, high: 0.0625 },
+    'NoHo': { low: 0.05, high: 0.06 }
+  };
+
   const submarkets = Object.keys(capRateData);
 
   const getCapRateBand = (selectedSubmarket, freeMarket) => {
@@ -168,6 +192,18 @@ function App() {
     };
   };
 
+  const getCommercialCapRateBand = (selectedSubmarket) => {
+    const rates = commercialCapRateData[selectedSubmarket];
+    if (!rates) {
+      return { low: 0.055, high: 0.065, label: 'Default Commercial' };
+    }
+    return {
+      low: rates.low,
+      high: rates.high,
+      label: `${selectedSubmarket} - Commercial`
+    };
+  };
+
   const calculateValue = async () => {
     // Prevent double submission
     if (isSubmitting) return;
@@ -177,18 +213,36 @@ function App() {
       alert('Please select a Submarket');
       return;
     }
-    if (!residentialIncome.trim()) {
-      alert('Please enter Annual Residential Income');
-      return;
+
+    // Validation based on building type
+    if (buildingType === 'commercial') {
+      if (!commercialIncome.trim()) {
+        alert('Please enter Annual Commercial Income');
+        return;
+      }
+      if (!operatingExpenses.trim()) {
+        alert('Please enter Annual Operating Expenses');
+        return;
+      }
+      if (hasResidentialComponent && !residentialIncome.trim()) {
+        alert('Please enter Annual Residential Income');
+        return;
+      }
+    } else {
+      if (!residentialIncome.trim()) {
+        alert('Please enter Annual Residential Income');
+        return;
+      }
+      if (!operatingExpenses.trim()) {
+        alert('Please enter Annual Operating Expenses');
+        return;
+      }
+      if (buildingType === 'mixed-use' && !retailIncome.trim()) {
+        alert('Please enter Annual Retail Income');
+        return;
+      }
     }
-    if (!operatingExpenses.trim()) {
-      alert('Please enter Annual Operating Expenses');
-      return;
-    }
-    if (buildingType === 'mixed-use' && !retailIncome.trim()) {
-      alert('Please enter Annual Retail Income');
-      return;
-    }
+
     if (!contactName.trim()) {
       alert('Please enter your Name');
       return;
@@ -201,15 +255,62 @@ function App() {
     // Set submitting state to prevent double clicks
     setIsSubmitting(true);
 
-    const residential = parseFloat(residentialIncome.replace(/,/g, '')) || 0;
-    const retail = buildingType === 'mixed-use' ? (parseFloat(retailIncome.replace(/,/g, '')) || 0) : 0;
-    const expenses = parseFloat(operatingExpenses.replace(/,/g, '')) || 0;
+    let noi, capBand, valueLow, valueHigh;
 
-    const noi = residential + retail - expenses;
-    const capBand = getCapRateBand(submarket, freeMarketPercent);
+    if (buildingType === 'commercial') {
+      const commercial = parseFloat(commercialIncome.replace(/,/g, '')) || 0;
+      const expenses = parseFloat(operatingExpenses.replace(/,/g, '')) || 0;
 
-    const valueLow = noi / capBand.high;
-    const valueHigh = noi / capBand.low;
+      if (hasResidentialComponent) {
+        // Commercial with residential component - calculate separately and combine
+        const residentialIncomeVal = parseFloat(residentialIncome.replace(/,/g, '')) || 0;
+
+        // For simplicity, we'll split expenses proportionally based on income
+        const totalIncome = commercial + residentialIncomeVal;
+        const commercialExpenseRatio = commercial / totalIncome;
+        const residentialExpenseRatio = residentialIncomeVal / totalIncome;
+
+        const commercialExpenses = expenses * commercialExpenseRatio;
+        const residentialExpenses = expenses * residentialExpenseRatio;
+
+        const commercialNoi = commercial - commercialExpenses;
+        const residentialNoi = residentialIncomeVal - residentialExpenses;
+
+        const commercialCapBand = getCommercialCapRateBand(submarket);
+        const residentialCapBand = getCapRateBand(submarket, freeMarketPercent);
+
+        const commercialValueLow = commercialNoi / commercialCapBand.high;
+        const commercialValueHigh = commercialNoi / commercialCapBand.low;
+        const residentialValueLow = residentialNoi / residentialCapBand.high;
+        const residentialValueHigh = residentialNoi / residentialCapBand.low;
+
+        noi = commercialNoi + residentialNoi;
+        valueLow = commercialValueLow + residentialValueLow;
+        valueHigh = commercialValueHigh + residentialValueHigh;
+        capBand = {
+          low: noi / valueHigh,
+          high: noi / valueLow,
+          label: `${submarket} - Commercial with Residential Component`
+        };
+      } else {
+        // Pure commercial
+        noi = commercial - expenses;
+        capBand = getCommercialCapRateBand(submarket);
+        valueLow = noi / capBand.high;
+        valueHigh = noi / capBand.low;
+      }
+    } else {
+      // Multifamily or Mixed-Use
+      const residential = parseFloat(residentialIncome.replace(/,/g, '')) || 0;
+      const retail = buildingType === 'mixed-use' ? (parseFloat(retailIncome.replace(/,/g, '')) || 0) : 0;
+      const expenses = parseFloat(operatingExpenses.replace(/,/g, '')) || 0;
+
+      noi = residential + retail - expenses;
+      capBand = getCapRateBand(submarket, freeMarketPercent);
+
+      valueLow = noi / capBand.high;
+      valueHigh = noi / capBand.low;
+    }
 
     setResults({
       noi,
@@ -218,9 +319,6 @@ function App() {
       capRateLabel: capBand.label,
       valueLow,
       valueHigh,
-      residential,
-      retail,
-      expenses,
     });
 
     // Generate and email PowerPoint
@@ -239,6 +337,11 @@ function App() {
     setContactPhone('');
     setContactEmail('');
     setBuildingAddress('');
+    // Clear commercial fields
+    setCommercialIncome('');
+    setCommercialUnitCount('');
+    setHasResidentialComponent(false);
+    setResidentialUnitCount('');
   };
 
   const formatCurrency = (value) => {
@@ -318,18 +421,29 @@ function App() {
       const downloadLink = uploadResult.link;
 
       // Prepare email data with all form inputs
+      const getBuildingTypeLabel = () => {
+        if (buildingType === 'commercial') {
+          return hasResidentialComponent ? 'Commercial with Residential' : 'Commercial';
+        }
+        return buildingType === 'mixed-use' ? 'Mixed-Use' : 'Multifamily';
+      };
+
       const templateParams = {
         from_name: formattedName,
         from_email: contactEmail || 'Not provided',
         phone: contactPhone || 'Not provided',
         property_address: addressUpper,
         submarket: submarket,
-        building_type: buildingType === 'mixed-use' ? 'Mixed-Use' : 'Multifamily',
-        residential_income: residentialIncome ? `$${residentialIncome}` : 'Not provided',
+        building_type: getBuildingTypeLabel(),
+        residential_income: buildingType === 'commercial'
+          ? (hasResidentialComponent ? (residentialIncome ? `$${residentialIncome}` : 'Not provided') : 'N/A')
+          : (residentialIncome ? `$${residentialIncome}` : 'Not provided'),
         retail_income: buildingType === 'mixed-use' ? (retailIncome ? `$${retailIncome}` : 'Not provided') : 'N/A',
+        commercial_income: buildingType === 'commercial' ? (commercialIncome ? `$${commercialIncome}` : 'Not provided') : 'N/A',
         operating_expenses: operatingExpenses ? `$${operatingExpenses}` : 'Not provided',
-        unit_count: unitCount || 'Not provided',
-        free_market_percent: `${freeMarketPercent}%`,
+        unit_count: buildingType === 'commercial' ? (commercialUnitCount || 'Not provided') : (unitCount || 'Not provided'),
+        residential_unit_count: buildingType === 'commercial' && hasResidentialComponent ? (residentialUnitCount || 'Not provided') : 'N/A',
+        free_market_percent: buildingType === 'commercial' && !hasResidentialComponent ? 'N/A' : `${freeMarketPercent}%`,
         download_link: downloadLink
       };
 
@@ -357,6 +471,10 @@ function App() {
       setContactPhone('');
       setContactEmail('');
       setBuildingAddress('');
+      setCommercialIncome('');
+      setCommercialUnitCount('');
+      setHasResidentialComponent(false);
+      setResidentialUnitCount('');
       setIsSubmitting(false);
 
     } catch (error) {
@@ -445,11 +563,11 @@ function App() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Building Type
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <button
                         type="button"
                         onClick={() => setBuildingType('multifamily')}
-                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                        className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg border-2 transition-all text-sm ${
                           buildingType === 'multifamily'
                             ? 'border-blue-600 bg-blue-50 text-blue-700'
                             : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -461,7 +579,7 @@ function App() {
                       <button
                         type="button"
                         onClick={() => setBuildingType('mixed-use')}
-                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                        className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg border-2 transition-all text-sm ${
                           buildingType === 'mixed-use'
                             ? 'border-blue-600 bg-blue-50 text-blue-700'
                             : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -469,6 +587,18 @@ function App() {
                       >
                         <FaStore />
                         Mixed-Use
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBuildingType('commercial')}
+                        className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg border-2 transition-all text-sm ${
+                          buildingType === 'commercial'
+                            ? 'border-blue-600 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <FaBuilding />
+                        Commercial
                       </button>
                     </div>
                   </div>
@@ -491,98 +621,234 @@ function App() {
                     </select>
                   </div>
 
-                  {/* Annual Residential Income */}
-                  <div>
-                    <label htmlFor="residentialIncome" className="block text-sm font-medium text-gray-700 mb-2">
-                      Annual Residential Income
-                    </label>
-                    <div className="relative">
-                      <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        id="residentialIncome"
-                        value={residentialIncome}
-                        onChange={(e) => setResidentialIncome(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="500,000"
-                      />
-                    </div>
-                  </div>
+                  {/* Commercial Building Inputs */}
+                  {buildingType === 'commercial' && (
+                    <>
+                      {/* Annual Commercial Income */}
+                      <div>
+                        <label htmlFor="commercialIncome" className="block text-sm font-medium text-gray-700 mb-2">
+                          Annual Commercial Income
+                        </label>
+                        <div className="relative">
+                          <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            id="commercialIncome"
+                            value={commercialIncome}
+                            onChange={(e) => setCommercialIncome(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="500,000"
+                          />
+                        </div>
+                      </div>
 
-                  {/* Retail Income (only for mixed-use) */}
-                  {buildingType === 'mixed-use' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                    >
-                      <label htmlFor="retailIncome" className="block text-sm font-medium text-gray-700 mb-2">
-                        Annual Retail Income
-                      </label>
-                      <div className="relative">
-                        <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      {/* Operating Expenses */}
+                      <div>
+                        <label htmlFor="operatingExpenses" className="block text-sm font-medium text-gray-700 mb-2">
+                          Annual Operating Expenses
+                        </label>
+                        <div className="relative">
+                          <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            id="operatingExpenses"
+                            value={operatingExpenses}
+                            onChange={(e) => setOperatingExpenses(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="200,000"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Number of Commercial Units */}
+                      <div>
+                        <label htmlFor="commercialUnitCount" className="block text-sm font-medium text-gray-700 mb-2">
+                          Number of Commercial Units
+                        </label>
                         <input
-                          type="text"
-                          id="retailIncome"
-                          value={retailIncome}
-                          onChange={(e) => setRetailIncome(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="100,000"
+                          type="number"
+                          id="commercialUnitCount"
+                          value={commercialUnitCount}
+                          onChange={(e) => setCommercialUnitCount(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="5"
                         />
                       </div>
-                    </motion.div>
+
+                      {/* Has Residential Component Checkbox */}
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          id="hasResidentialComponent"
+                          checked={hasResidentialComponent}
+                          onChange={(e) => setHasResidentialComponent(e.target.checked)}
+                          className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="hasResidentialComponent" className="text-sm font-medium text-gray-700">
+                          Component of Building is Residential
+                        </label>
+                      </div>
+
+                      {/* Residential Component Inputs (shown when checkbox is checked) */}
+                      {hasResidentialComponent && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="space-y-5 pl-4 border-l-2 border-blue-200"
+                        >
+                          {/* Annual Residential Income */}
+                          <div>
+                            <label htmlFor="residentialIncome" className="block text-sm font-medium text-gray-700 mb-2">
+                              Annual Residential Income
+                            </label>
+                            <div className="relative">
+                              <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                              <input
+                                type="text"
+                                id="residentialIncome"
+                                value={residentialIncome}
+                                onChange={(e) => setResidentialIncome(e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="300,000"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Number of Residential Units */}
+                          <div>
+                            <label htmlFor="residentialUnitCount" className="block text-sm font-medium text-gray-700 mb-2">
+                              Number of Residential Units
+                            </label>
+                            <input
+                              type="number"
+                              id="residentialUnitCount"
+                              value={residentialUnitCount}
+                              onChange={(e) => setResidentialUnitCount(e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="10"
+                            />
+                          </div>
+
+                          {/* Free Market Percentage Slider */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Free Market Units: <span className="text-blue-600 font-bold">{freeMarketPercent}%</span>
+                            </label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={freeMarketPercent}
+                              onChange={(e) => setFreeMarketPercent(parseInt(e.target.value))}
+                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>0% (All Stabilized)</span>
+                              <span>100% (All Free Market)</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </>
                   )}
 
-                  {/* Operating Expenses */}
-                  <div>
-                    <label htmlFor="operatingExpenses" className="block text-sm font-medium text-gray-700 mb-2">
-                      Annual Operating Expenses
-                    </label>
-                    <div className="relative">
-                      <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        id="operatingExpenses"
-                        value={operatingExpenses}
-                        onChange={(e) => setOperatingExpenses(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="200,000"
-                      />
-                    </div>
-                  </div>
+                  {/* Multifamily and Mixed-Use Inputs */}
+                  {buildingType !== 'commercial' && (
+                    <>
+                      {/* Annual Residential Income */}
+                      <div>
+                        <label htmlFor="residentialIncome" className="block text-sm font-medium text-gray-700 mb-2">
+                          Annual Residential Income
+                        </label>
+                        <div className="relative">
+                          <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            id="residentialIncome"
+                            value={residentialIncome}
+                            onChange={(e) => setResidentialIncome(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="500,000"
+                          />
+                        </div>
+                      </div>
 
-                  {/* Unit Count */}
-                  <div>
-                    <label htmlFor="unitCount" className="block text-sm font-medium text-gray-700 mb-2">
-                      Number of Units (Optional)
-                    </label>
-                    <input
-                      type="number"
-                      id="unitCount"
-                      value={unitCount}
-                      onChange={(e) => setUnitCount(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="20"
-                    />
-                  </div>
+                      {/* Retail Income (only for mixed-use) */}
+                      {buildingType === 'mixed-use' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                        >
+                          <label htmlFor="retailIncome" className="block text-sm font-medium text-gray-700 mb-2">
+                            Annual Retail Income
+                          </label>
+                          <div className="relative">
+                            <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                              type="text"
+                              id="retailIncome"
+                              value={retailIncome}
+                              onChange={(e) => setRetailIncome(e.target.value)}
+                              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="100,000"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
 
-                  {/* Free Market Percentage Slider */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Free Market Units: <span className="text-blue-600 font-bold">{freeMarketPercent}%</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={freeMarketPercent}
-                      onChange={(e) => setFreeMarketPercent(parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>0% (All Stabilized)</span>
-                      <span>100% (All Free Market)</span>
-                    </div>
-                  </div>
+                      {/* Operating Expenses */}
+                      <div>
+                        <label htmlFor="operatingExpenses" className="block text-sm font-medium text-gray-700 mb-2">
+                          Annual Operating Expenses
+                        </label>
+                        <div className="relative">
+                          <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            id="operatingExpenses"
+                            value={operatingExpenses}
+                            onChange={(e) => setOperatingExpenses(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="200,000"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Unit Count */}
+                      <div>
+                        <label htmlFor="unitCount" className="block text-sm font-medium text-gray-700 mb-2">
+                          Number of Units (Optional)
+                        </label>
+                        <input
+                          type="number"
+                          id="unitCount"
+                          value={unitCount}
+                          onChange={(e) => setUnitCount(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="20"
+                        />
+                      </div>
+
+                      {/* Free Market Percentage Slider */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Free Market Units: <span className="text-blue-600 font-bold">{freeMarketPercent}%</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={freeMarketPercent}
+                          onChange={(e) => setFreeMarketPercent(parseInt(e.target.value))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>0% (All Stabilized)</span>
+                          <span>100% (All Free Market)</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Contact Information */}
                   <div className="border-t border-gray-200 pt-5 mt-2">
