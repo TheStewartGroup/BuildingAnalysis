@@ -299,35 +299,23 @@ function App() {
         mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
       });
 
-      // Upload to GoFile.io to get a download link
-      // First, get an available server
-      const serverResponse = await fetch('https://api.gofile.io/servers');
-      const serverData = await serverResponse.json();
-      console.log('GoFile servers:', serverData);
-
-      if (serverData.status !== 'ok' || !serverData.data.servers.length) {
-        throw new Error('Failed to get upload server');
-      }
-
-      const server = serverData.data.servers[0].name;
-
-      // Upload to the server
+      // Upload to file.io to get a download link
       const formData = new FormData();
       formData.append('file', pptxBlob, `${addressUpper.replace(/[^a-zA-Z0-9]/g, '_')}_ANALYSIS.pptx`);
 
-      const uploadResponse = await fetch(`https://${server}.gofile.io/contents/uploadfile`, {
+      const uploadResponse = await fetch('https://file.io', {
         method: 'POST',
         body: formData
       });
 
       const uploadResult = await uploadResponse.json();
-      console.log('GoFile upload result:', uploadResult);
+      console.log('file.io upload result:', uploadResult);
 
-      if (uploadResult.status !== 'ok') {
-        throw new Error('Failed to upload file');
+      if (!uploadResult.success) {
+        throw new Error('Failed to upload file: ' + (uploadResult.message || 'Unknown error'));
       }
 
-      const downloadLink = uploadResult.data.downloadPage;
+      const downloadLink = uploadResult.link;
 
       // Prepare email data with all form inputs
       const templateParams = {
