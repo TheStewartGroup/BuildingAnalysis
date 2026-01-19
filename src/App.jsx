@@ -393,17 +393,22 @@ function App() {
 
       // Calculate price per sqft if square footage is provided
       const pricePerSqftRange = sqft > 0
-        ? `${formatCurrency(valueHigh / sqft)} - ${formatCurrency(valueLow / sqft)} per sqft`
+        ? `${formatCurrency(valueHigh / sqft)} - ${formatCurrency(valueLow / sqft)} PSF`
         : '';
 
-      // Get all XML files from the pptx
-      const slideFiles = Object.keys(zip.files).filter(name =>
-        name.startsWith('ppt/slides/slide') && name.endsWith('.xml')
-      );
+      // Only process slides 1 and 7 (where placeholders exist)
+      // Avoid processing other slides to preserve special characters like arrow bullets
+      const slideFiles = ['ppt/slides/slide1.xml', 'ppt/slides/slide7.xml'];
 
-      // Process each slide
+      // Process only the specified slides with proper encoding preservation
       slideFiles.forEach(fileName => {
-        let content = zip.file(fileName).asText();
+        if (!zip.file(fileName)) return; // Skip if slide doesn't exist
+
+        // Read as Uint8Array to preserve binary data
+        const uint8Array = zip.file(fileName).asUint8Array();
+        // Decode with UTF-8
+        const decoder = new TextDecoder('utf-8');
+        let content = decoder.decode(uint8Array);
 
         // Replace placeholders
         content = content.replace(/INPUT ADDRESS/g, addressUpper);
@@ -412,8 +417,9 @@ function App() {
         // Replace price per sqft placeholder (only shows if sqft was provided)
         content = content.replace(/INPUT PRICE PER SQFT/g, pricePerSqftRange);
 
-        // Update the file in the zip
-        zip.file(fileName, content);
+        // Encode back to UTF-8 and update the file in the zip
+        const encoder = new TextEncoder();
+        zip.file(fileName, encoder.encode(content));
       });
 
       // Generate the PowerPoint as blob
