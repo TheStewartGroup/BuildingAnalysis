@@ -375,8 +375,12 @@ function App() {
 
   const generateAndEmailPowerPoint = async (valueLow, valueHigh, capBand) => {
     try {
-      // Fetch the template
-      const response = await fetch(`${import.meta.env.BASE_URL}template.pptx`);
+      // Determine which template to use based on whether square footage is provided
+      const sqft = parseFloat(buildingSquareFootage.replace(/,/g, '')) || 0;
+      const templateFile = sqft > 0 ? 'template_sqft.pptx' : 'template.pptx';
+
+      // Fetch the appropriate template
+      const response = await fetch(`${import.meta.env.BASE_URL}${templateFile}`);
       const arrayBuffer = await response.arrayBuffer();
 
       // Load the template with PizZip
@@ -388,7 +392,6 @@ function App() {
       const valueRange = `${formatCurrency(valueHigh)} - ${formatCurrency(valueLow)}`;
 
       // Calculate price per sqft if square footage is provided
-      const sqft = parseFloat(buildingSquareFootage.replace(/,/g, '')) || 0;
       const pricePerSqftRange = sqft > 0
         ? `${formatCurrency(valueHigh / sqft)} - ${formatCurrency(valueLow / sqft)} per sqft`
         : '';
