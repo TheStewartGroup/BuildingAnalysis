@@ -36,6 +36,11 @@ function App() {
   const [hasResidentialComponent, setHasResidentialComponent] = useState(false);
   const [residentialUnitCount, setResidentialUnitCount] = useState('');
 
+  // Optional fields for all building types
+  const [buildingSquareFootage, setBuildingSquareFootage] = useState('');
+  const [canBeVacated, setCanBeVacated] = useState(false);
+  const [vacateContext, setVacateContext] = useState('');
+
   // Cap rate data from CSV - organized by submarket and free market percentage
   const capRateData = {
     'Lower East Side': {
@@ -342,6 +347,10 @@ function App() {
     setCommercialUnitCount('');
     setHasResidentialComponent(false);
     setResidentialUnitCount('');
+    // Clear optional fields
+    setBuildingSquareFootage('');
+    setCanBeVacated(false);
+    setVacateContext('');
   };
 
   const formatCurrency = (value) => {
@@ -378,6 +387,12 @@ function App() {
       const formattedName = formatName(contactName);
       const valueRange = `${formatCurrency(valueHigh)} - ${formatCurrency(valueLow)}`;
 
+      // Calculate price per sqft if square footage is provided
+      const sqft = parseFloat(buildingSquareFootage.replace(/,/g, '')) || 0;
+      const pricePerSqftRange = sqft > 0
+        ? `${formatCurrency(valueHigh / sqft)} - ${formatCurrency(valueLow / sqft)} per sqft`
+        : '';
+
       // Get all XML files from the pptx
       const slideFiles = Object.keys(zip.files).filter(name =>
         name.startsWith('ppt/slides/slide') && name.endsWith('.xml')
@@ -391,6 +406,8 @@ function App() {
         content = content.replace(/INPUT ADDRESS/g, addressUpper);
         content = content.replace(/INPUT NAME/g, formattedName);
         content = content.replace(/INPUT RANGE \(HIGH TO LOW\)/g, valueRange);
+        // Replace price per sqft placeholder (only shows if sqft was provided)
+        content = content.replace(/INPUT PRICE PER SQFT/g, pricePerSqftRange);
 
         // Update the file in the zip
         zip.file(fileName, content);
@@ -444,6 +461,10 @@ function App() {
         unit_count: buildingType === 'commercial' ? (commercialUnitCount || 'Not provided') : (unitCount || 'Not provided'),
         residential_unit_count: buildingType === 'commercial' && hasResidentialComponent ? (residentialUnitCount || 'Not provided') : 'N/A',
         free_market_percent: buildingType === 'commercial' && !hasResidentialComponent ? 'N/A' : `${freeMarketPercent}%`,
+        building_square_footage: buildingSquareFootage || 'Not provided',
+        price_per_sqft: pricePerSqftRange || 'N/A',
+        can_be_vacated: canBeVacated ? 'Yes' : 'No',
+        vacate_context: canBeVacated ? (vacateContext || 'Not provided') : 'N/A',
         download_link: downloadLink
       };
 
@@ -475,6 +496,9 @@ function App() {
       setCommercialUnitCount('');
       setHasResidentialComponent(false);
       setResidentialUnitCount('');
+      setBuildingSquareFootage('');
+      setCanBeVacated(false);
+      setVacateContext('');
       setIsSubmitting(false);
 
     } catch (error) {
@@ -849,6 +873,59 @@ function App() {
                       </div>
                     </>
                   )}
+
+                  {/* Optional Fields - All Building Types */}
+                  <div className="border-t border-gray-200 pt-5 mt-2">
+                    {/* Building Square Footage */}
+                    <div className="mb-5">
+                      <label htmlFor="buildingSquareFootage" className="block text-sm font-medium text-gray-700 mb-2">
+                        Building Square Footage (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="buildingSquareFootage"
+                        value={buildingSquareFootage}
+                        onChange={(e) => setBuildingSquareFootage(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="10,000"
+                      />
+                    </div>
+
+                    {/* Can Building be Vacated */}
+                    <div className="mb-5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <input
+                          type="checkbox"
+                          id="canBeVacated"
+                          checked={canBeVacated}
+                          onChange={(e) => setCanBeVacated(e.target.checked)}
+                          className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="canBeVacated" className="text-sm font-medium text-gray-700">
+                          Can Building be Vacated (Optional)
+                        </label>
+                      </div>
+
+                      {canBeVacated && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                        >
+                          <label htmlFor="vacateContext" className="block text-sm font-medium text-gray-700 mb-2">
+                            Explain context for vacating
+                          </label>
+                          <textarea
+                            id="vacateContext"
+                            value={vacateContext}
+                            onChange={(e) => setVacateContext(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Provide details about the vacancy situation..."
+                            rows={3}
+                          />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Contact Information */}
                   <div className="border-t border-gray-200 pt-5 mt-2">
