@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { FaDollarSign, FaHome, FaStore, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import PizZip from 'pizzip';
-import emailjs from '@emailjs/browser';
 import logoImage from '../images/Logo.jpg';
 import headshotsImage from '../images/headshots.png';
 import contactInfoImage from '../images/Contact Information.png';
@@ -10,10 +9,8 @@ import sideTextImage from '../images/side text.jpg';
 import titleImage from '../images/title.jpg';
 import completionTextImage from '../images/Completion Text.jpg';
 
-// EmailJS credentials
-const EMAILJS_SERVICE_ID = "service_vi2s038";
-const EMAILJS_TEMPLATE_ID = "template_9uted9z";
-const EMAILJS_PUBLIC_KEY = "grMr8mUr0YLCUu5QO";
+// Formspree endpoint
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/xqeejyrz";
 
 function App() {
   const [buildingType, setBuildingType] = useState('multifamily');
@@ -429,7 +426,7 @@ function App() {
       });
 
       // Upload to gofile.io to get a download link (supports CORS)
-      // Step 1: Get an available server
+      // Step 1: Get available servers
       const serverResponse = await fetch('https://api.gofile.io/servers');
       const serverResult = await serverResponse.json();
       console.log('gofile.io server result:', serverResult);
@@ -438,22 +435,37 @@ function App() {
         throw new Error('Failed to get upload server');
       }
 
-      const server = serverResult.data.servers[0].name;
+      const servers = serverResult.data.servers;
+      let uploadResult = null;
+      let lastError = null;
+      const fileName = `${addressUpper.replace(/[^a-zA-Z0-9]/g, '_')}_ANALYSIS.pptx`;
 
-      // Step 2: Upload to the server
-      const formData = new FormData();
-      formData.append('file', pptxBlob, `${addressUpper.replace(/[^a-zA-Z0-9]/g, '_')}_ANALYSIS.pptx`);
+      // Step 2: Try each server until one works
+      for (const serverObj of servers) {
+        try {
+          console.log(`Trying server: ${serverObj.name}`);
+          const formData = new FormData();
+          formData.append('file', pptxBlob, fileName);
 
-      const uploadResponse = await fetch(`https://${server}.gofile.io/contents/uploadfile`, {
-        method: 'POST',
-        body: formData
-      });
+          const uploadResponse = await fetch(`https://${serverObj.name}.gofile.io/contents/uploadfile`, {
+            method: 'POST',
+            body: formData
+          });
 
-      const uploadResult = await uploadResponse.json();
-      console.log('gofile.io upload result:', uploadResult);
+          uploadResult = await uploadResponse.json();
+          console.log(`gofile.io upload result from ${serverObj.name}:`, uploadResult);
 
-      if (uploadResult.status !== 'ok') {
-        throw new Error('Failed to upload file: ' + (uploadResult.status || 'Unknown error'));
+          if (uploadResult.status === 'ok') {
+            break; // Success, exit loop
+          }
+        } catch (err) {
+          lastError = err;
+          console.warn(`Server ${serverObj.name} failed, trying next...`, err);
+        }
+      }
+
+      if (!uploadResult || uploadResult.status !== 'ok') {
+        throw new Error('All upload servers failed: ' + (lastError?.message || 'Unknown error'));
       }
 
       const downloadLink = uploadResult.data.downloadPage;
@@ -489,15 +501,23 @@ function App() {
         download_link: downloadLink
       };
 
-      // Send email via EmailJS
-      console.log('Sending email with params:', templateParams);
-      const emailResult = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
-      console.log('Email sent successfully:', emailResult);
+      // Send form data via Formspree
+      console.log('Sending form data:', templateParams);
+      const formspreeResponse = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(templateParams)
+      });
+
+      if (!formspreeResponse.ok) {
+        throw new Error('Failed to submit form to Formspree');
+      }
+
+      const formspreeResult = await formspreeResponse.json();
+      console.log('Form submitted successfully:', formspreeResult);
 
       // Show success alert
       alert('File submitted successfully!');
