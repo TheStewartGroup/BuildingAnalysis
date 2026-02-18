@@ -7,7 +7,7 @@ import headshotsImage from '../images/headshots.png';
 import contactInfoImage from '../images/Contact Information.png';
 import sideTextImage from '../images/side text.jpg';
 import titleImage from '../images/title.jpg';
-import completionTextImage from '../images/Completion Text.jpg';
+import completionTextImage from '../images/Completion Text.png';
 
 // Formspree endpoint
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xqeejyrz";
